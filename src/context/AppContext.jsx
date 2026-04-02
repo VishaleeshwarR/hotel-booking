@@ -1,10 +1,10 @@
 
-import React, { createContext, useState, useContext } from 'react';
+import React, { createContext, useState, useContext, useEffect } from 'react';
 
 const AppContext = createContext();
 
 export const AppProvider = ({ children }) => {
-    // Initialize from LocalStorage if available
+    // Initialize from LocalStorage if available (fallback for mock users)
     const [user, setUser] = useState(() => {
         try {
             const saved = localStorage.getItem('hotel_user');
@@ -28,19 +28,56 @@ export const AppProvider = ({ children }) => {
     // Mock System Time for Tatkal Logic (Defaults to Now)
     const [systemDate] = useState(new Date());
 
+    useEffect(() => {
+        import('../lib/supabase').then(({ supabase }) => {
+            supabase.auth.getSession().then(({ data: { session } }) => {
+                if (session?.user) {
+                    setUser({
+                        id: session.user.id,
+                        email: session.user.email,
+                        name: session.user.email.split('@')[0],
+                        role: 'user',
+                        isSupabase: true
+                    });
+                }
+            });
+
+            const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+                if (session?.user) {
+                    setUser({
+                        id: session.user.id,
+                        email: session.user.email,
+                        name: session.user.email.split('@')[0],
+                        role: 'user',
+                        isSupabase: true
+                    });
+                } else {
+                    // Only clear user if it's currently a supabase user.
+                    setUser((prev) => (prev?.isSupabase ? null : prev));
+                }
+            });
+
+            return () => subscription.unsubscribe();
+        }).catch(err => console.error("Error loading supabase in context:", err));
+    }, []);
+
     const login = (email, role = 'user') => {
-        const newUser = { name: email.split('@')[0], email, role };
+        const newUser = { name: email.split('@')[0], email, role, isMock: true };
         setUser(newUser);
         localStorage.setItem('hotel_user', JSON.stringify(newUser));
     };
 
-    const logout = () => {
+    const logout = async () => {
+        if (user?.isSupabase) {
+            const { supabase } = await import('../lib/supabase');
+            await supabase.auth.signOut();
+        }
         setUser(null);
         localStorage.removeItem('hotel_user');
     };
 
     const addBooking = (booking) => {
-        const newBookings = [...bookings, { ...booking, id: Date.now(), status: 'Confirmed' }];
+        const newBookings = [...bookings, { ...booking, userEmail: user?.email, id: Date.now(), status: 'Confirmed' }];
         setBookings(newBookings);
         localStorage.setItem('hotel_bookings', JSON.stringify(newBookings));
     };

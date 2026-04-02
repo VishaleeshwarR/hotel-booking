@@ -32,7 +32,8 @@ const Navbar = () => {
             <div className="nav-links" style={{ display: 'flex', gap: '2rem' }}>
                 <Link to="/">Home</Link>
                 <Link to="/packages">Packages</Link>
-                {user?.role === 'admin' && <Link to="/admin">Dashboard</Link>}
+                {user && <Link to="/dashboard">Dashboard</Link>}
+                {user?.role === 'admin' && <Link to="/admin">Admin Panel</Link>}
             </div>
 
             <div className="nav-actions" style={{ display: 'flex', gap: '1rem' }}>

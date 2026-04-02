@@ -71,10 +71,7 @@ const HotelDetails = () => {
             isTatkal: activeTatkal
         };
 
-        addBooking(newBooking);
-
-        // Navigate to Module 7: Billing
-        navigate('/invoice', { state: { booking: { ...newBooking, id: Date.now() } } });
+        navigate('/payment', { state: { booking: newBooking } });
     };
 
     return (

@@ -7,7 +7,9 @@ import Login from './pages/Login';
 import HotelDetails from './pages/HotelDetails';
 import Packages from './pages/Packages';
 import Invoice from './pages/Invoice';
+import Payment from './pages/Payment';
 import Admin from './pages/Admin';
+import Dashboard from './pages/Dashboard';
 import Navbar from './components/Navbar';
 import { MessageSquare } from 'lucide-react';
 
@@ -23,7 +25,9 @@ function App() {
               <Route path="/login" element={<Login />} />
               <Route path="/packages" element={<Packages />} />
               <Route path="/admin" element={<Admin />} />
+              <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/hotel/:id" element={<HotelDetails />} />
+              <Route path="/payment" element={<Payment />} />
               <Route path="/invoice" element={<Invoice />} />
             </Routes>
           </main>

@@ -1,11 +1,14 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { Check, ArrowRight } from 'lucide-react';
+import { useApp } from '../context/AppContext';
+import { useNavigate } from 'react-router-dom';
 
 const Packages = () => {
     const [packages, setPackages] = useState([]);
     const [loading, setLoading] = useState(true);
+    const { addBooking, user } = useApp();
+    const navigate = useNavigate();
 
     useEffect(() => {
         const fetchPackages = async () => {
@@ -20,6 +23,26 @@ const Packages = () => {
         };
         fetchPackages();
     }, []);
+
+    const handleBookPackage = (pkg) => {
+        if (!user) {
+            alert("Please login to book a package");
+            navigate('/login');
+            return;
+        }
+
+        const newBooking = {
+            hotelName: pkg.title,
+            roomType: 'Package Deal',
+            price: pkg.price,
+            nights: parseInt(pkg.duration) || 1,
+            date: new Date().toISOString().split('T')[0], // Defaults to today for packages
+            isTatkal: false,
+            isPackage: true
+        };
+
+        navigate('/payment', { state: { booking: newBooking } });
+    };
 
     if (loading) return <div className="container" style={{ textAlign: 'center', marginTop: '4rem' }}>Loading packages...</div>;
 
@@ -68,7 +91,7 @@ const Packages = () => {
                                 ))}
                             </div>
 
-                            <button style={{
+                            <button onClick={() => handleBookPackage(pkg)} style={{
                                 marginTop: '2rem', width: '100%', display: 'flex',
                                 justifyContent: 'center', alignItems: 'center', gap: '0.5rem'
                             }}>
