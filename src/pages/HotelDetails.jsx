@@ -238,15 +238,15 @@ const HotelDetails = () => {
 
                         <button
                             onClick={handleBook}
-                            disabled={hotel.availability <= 0}
+                            disabled={hotel.availability <= 0 || !selectedRoom}
                             style={{ 
                                 width: '100%', 
-                                background: hotel.availability <= 0 ? 'rgba(100,100,100,0.3)' : 'var(--primary)', 
-                                color: hotel.availability <= 0 ? 'var(--text-muted)' : 'white',
-                                cursor: hotel.availability <= 0 ? 'not-allowed' : 'pointer'
+                                background: (hotel.availability <= 0 || !selectedRoom) ? 'rgba(100,100,100,0.3)' : 'var(--primary)', 
+                                color: (hotel.availability <= 0 || !selectedRoom) ? 'var(--text-muted)' : 'white',
+                                cursor: (hotel.availability <= 0 || !selectedRoom) ? 'not-allowed' : 'pointer'
                             }}
                         >
-                            {hotel.availability <= 0 ? 'Sold Out' : 'Confirm Booking'}
+                            {hotel.availability <= 0 ? 'Sold Out' : (!selectedRoom ? 'Select a Room' : 'Confirm Booking')}
                         </button>
                         <div style={{ marginTop: '1rem', display: 'flex', justifyContent: 'center', gap: '5px', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
                             <Shield size={12} /> Secure Booking
