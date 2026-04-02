@@ -14,6 +14,14 @@ const HotelDetails = () => {
     const [checkIn, setCheckIn] = useState('');
     const [selectedRoom, setSelectedRoom] = useState(null);
 
+    // Today's date string in YYYY-MM-DD (local time)
+    const todayStr = new Date().toLocaleDateString('en-CA'); // 'en-CA' gives YYYY-MM-DD
+    const tomorrowStr = (() => {
+        const d = new Date();
+        d.setDate(d.getDate() + 1);
+        return d.toLocaleDateString('en-CA');
+    })();
+
     useEffect(() => {
         const fetchHotel = async () => {
             setLoading(true);
@@ -37,36 +45,62 @@ const HotelDetails = () => {
     if (!hotel) return <div className="container" style={{ textAlign: 'center', marginTop: '4rem' }}>Hotel not found</div>;
 
     // SYSTEM LOGIC: Tatkal / Last Minute
-    // If check-in is today or tomorrow (within 24-48h logic), apply Tatkal pricing.
+    // Tatkal is ONLY valid if check-in is TODAY or TOMORROW (calendar-day comparison).
     const isTatkal = () => {
         if (!checkIn) return false;
-        const date = new Date(checkIn);
-        const today = new Date();
-        const diffTime = date - today;
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        return diffDays <= 1 && diffDays >= 0;
+        return checkIn === todayStr || checkIn === tomorrowStr;
     };
 
     const activeTatkal = isTatkal();
 
-    const handleBook = () => {
+    const handleBook = async () => {
         if (!user) {
             alert("Please login to book a room");
             navigate('/login');
             return;
         }
-        if (!checkIn || !selectedRoom) {
-            alert("Please select dates and a room");
+        if (!checkIn) {
+            alert("Please select a check-in date");
+            return;
+        }
+        // Block past dates
+        if (checkIn < todayStr) {
+            alert("Check-in date cannot be in the past. Please select today or a future date.");
+            return;
+        }
+        if (!selectedRoom) {
+            alert("Please select a room");
+            return;
+        }
+        if (hotel.availability <= 0) {
+            alert("Sorry, this hotel is fully booked.");
             return;
         }
 
         const price = activeTatkal ? hotel.tatkalPrice : selectedRoom.price;
 
+        // Decrement availability in Supabase
+        const newAvailability = hotel.availability - 1;
+        const { error: updateError } = await supabase
+            .from('hotels')
+            .update({ availability: newAvailability })
+            .eq('id', hotel.id);
+
+        if (updateError) {
+            console.error('Failed to update room availability:', updateError);
+            alert('Could not confirm room availability. Please try again.');
+            return;
+        }
+
+        // Update local state so UI reflects new count immediately
+        setHotel(prev => ({ ...prev, availability: newAvailability }));
+
         const newBooking = {
             hotelName: hotel.name,
+            hotelId: hotel.id,
             roomType: selectedRoom.type,
             price: price,
-            nights: 1, // simplified
+            nights: 1,
             date: checkIn,
             isTatkal: activeTatkal
         };
@@ -148,6 +182,7 @@ const HotelDetails = () => {
                             <input
                                 type="date"
                                 value={checkIn}
+                                min={todayStr}
                                 onChange={(e) => setCheckIn(e.target.value)}
                                 style={{
                                     width: '100%', padding: '10px', borderRadius: '8px',
@@ -156,9 +191,11 @@ const HotelDetails = () => {
                                 }}
                             />
                             
+                            {/* Fast-Track Tatkal button — only show for today/tomorrow dates */}
                             <button
-                                onClick={() => setCheckIn(new Date().toISOString().split('T')[0])}
+                                onClick={() => setCheckIn(todayStr)}
                                 style={{ width: '100%', padding: '8px', fontSize: '0.85rem', background: 'rgba(239, 68, 68, 0.2)', color: '#ef4444', border: '1px solid #ef4444', marginBottom: '0.5rem' }}
+                                title="Tatkal is only available for check-in today or tomorrow"
                             >
                                 ⚡ Fast-Track: Apply Tatkal (Today)
                             </button>
@@ -168,8 +205,18 @@ const HotelDetails = () => {
                                     <Clock size={16} color="#ef4444" style={{ marginTop: '2px' }} />
                                     <div>
                                         <strong style={{ color: '#ef4444', display: 'block' }}>Tatkal Rate Applied!</strong>
-                                        <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Last-minute booking logic is active. Special pricing unlocked.</span>
+                                        <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Last-minute booking — special pricing unlocked for today/tomorrow check-in.</span>
                                     </div>
+                                </div>
+                            )}
+                            {checkIn && !activeTatkal && checkIn >= todayStr && (
+                                <div style={{ marginTop: '10px', padding: '8px 10px', background: 'rgba(255,255,255,0.05)', borderRadius: '8px', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                                    ℹ️ Tatkal pricing is only available for today or tomorrow check-in.
+                                </div>
+                            )}
+                            {hotel.availability <= 0 && (
+                                <div style={{ marginTop: '10px', padding: '8px 10px', background: 'rgba(239,68,68,0.1)', borderRadius: '8px', fontSize: '0.85rem', color: '#ef4444', border: '1px solid #ef4444' }}>
+                                    🚫 This hotel is fully booked.
                                 </div>
                             )}
                         </div>
@@ -191,9 +238,15 @@ const HotelDetails = () => {
 
                         <button
                             onClick={handleBook}
-                            style={{ width: '100%', background: 'var(--primary)', color: 'white' }}
+                            disabled={hotel.availability <= 0}
+                            style={{ 
+                                width: '100%', 
+                                background: hotel.availability <= 0 ? 'rgba(100,100,100,0.3)' : 'var(--primary)', 
+                                color: hotel.availability <= 0 ? 'var(--text-muted)' : 'white',
+                                cursor: hotel.availability <= 0 ? 'not-allowed' : 'pointer'
+                            }}
                         >
-                            Confirm Booking
+                            {hotel.availability <= 0 ? 'Sold Out' : 'Confirm Booking'}
                         </button>
                         <div style={{ marginTop: '1rem', display: 'flex', justifyContent: 'center', gap: '5px', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
                             <Shield size={12} /> Secure Booking

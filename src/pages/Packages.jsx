@@ -7,8 +7,11 @@ import { useNavigate } from 'react-router-dom';
 const Packages = () => {
     const [packages, setPackages] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [selectedDate, setSelectedDate] = useState({});
     const { addBooking, user } = useApp();
     const navigate = useNavigate();
+
+    const todayStr = new Date().toLocaleDateString('en-CA');
 
     useEffect(() => {
         const fetchPackages = async () => {
@@ -31,12 +34,22 @@ const Packages = () => {
             return;
         }
 
+        const travelDate = selectedDate[pkg.id];
+        if (!travelDate) {
+            alert("Please select a travel start date for this package.");
+            return;
+        }
+        if (travelDate < todayStr) {
+            alert("Travel date cannot be in the past. Please select today or a future date.");
+            return;
+        }
+
         const newBooking = {
             hotelName: pkg.title,
             roomType: 'Package Deal',
             price: pkg.price,
             nights: parseInt(pkg.duration) || 1,
-            date: new Date().toISOString().split('T')[0], // Defaults to today for packages
+            date: travelDate,
             isTatkal: false,
             isPackage: true
         };
@@ -71,33 +84,52 @@ const Packages = () => {
                             </div>
                         </div>
 
-                        <div style={{ padding: '2rem', flex: 1, display: 'flex', flexDirection: 'column' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                                <span style={{ fontSize: '1.8rem', fontWeight: 'bold', color: 'var(--primary)' }}>${pkg.price}</span>
-                                <span style={{
-                                    background: 'rgba(255,255,255,0.1)', padding: '5px 10px',
-                                    borderRadius: '20px', fontSize: '0.9rem'
+                            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '2rem' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                                    <span style={{ fontSize: '1.8rem', fontWeight: 'bold', color: 'var(--primary)' }}>${pkg.price}</span>
+                                    <span style={{
+                                        background: 'rgba(255,255,255,0.1)', padding: '5px 10px',
+                                        borderRadius: '20px', fontSize: '0.9rem'
+                                    }}>
+                                        {pkg.duration}
+                                    </span>
+                                </div>
+
+                                <div style={{ flex: 1 }}>
+                                    {pkg.includes.map((item, idx) => (
+                                        <div key={idx} style={{ display: 'flex', gap: '10px', marginBottom: '0.8rem', color: 'var(--text-muted)' }}>
+                                            <Check size={18} color="var(--secondary)" />
+                                            {item}
+                                        </div>
+                                    ))}
+                                </div>
+
+                                {/* Travel Date Selector */}
+                                <div style={{ marginTop: '1.5rem' }}>
+                                    <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                                        📅 Select Travel Start Date
+                                    </label>
+                                    <input
+                                        type="date"
+                                        value={selectedDate[pkg.id] || ''}
+                                        min={todayStr}
+                                        onChange={(e) => setSelectedDate(prev => ({ ...prev, [pkg.id]: e.target.value }))}
+                                        style={{
+                                            width: '100%', padding: '8px 10px', borderRadius: '8px',
+                                            border: 'var(--glass-border)', background: 'rgba(255,255,255,0.05)',
+                                            color: 'white', fontFamily: 'inherit', marginBottom: '0.75rem',
+                                            boxSizing: 'border-box'
+                                        }}
+                                    />
+                                </div>
+
+                                <button onClick={() => handleBookPackage(pkg)} style={{
+                                    marginTop: '0.5rem', width: '100%', display: 'flex',
+                                    justifyContent: 'center', alignItems: 'center', gap: '0.5rem'
                                 }}>
-                                    {pkg.duration}
-                                </span>
+                                    Book Package <ArrowRight size={18} />
+                                </button>
                             </div>
-
-                            <div style={{ flex: 1 }}>
-                                {pkg.includes.map((item, idx) => (
-                                    <div key={idx} style={{ display: 'flex', gap: '10px', marginBottom: '0.8rem', color: 'var(--text-muted)' }}>
-                                        <Check size={18} color="var(--secondary)" />
-                                        {item}
-                                    </div>
-                                ))}
-                            </div>
-
-                            <button onClick={() => handleBookPackage(pkg)} style={{
-                                marginTop: '2rem', width: '100%', display: 'flex',
-                                justifyContent: 'center', alignItems: 'center', gap: '0.5rem'
-                            }}>
-                                Book Package <ArrowRight size={18} />
-                            </button>
-                        </div>
                     </div>
                 ))}
             </div>

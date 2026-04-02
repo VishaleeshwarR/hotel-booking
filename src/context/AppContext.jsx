@@ -1,5 +1,6 @@
 
 import React, { createContext, useState, useContext, useEffect } from 'react';
+import { supabase } from '../lib/supabase';
 
 const AppContext = createContext();
 
@@ -82,10 +83,32 @@ export const AppProvider = ({ children }) => {
         localStorage.setItem('hotel_bookings', JSON.stringify(newBookings));
     };
 
-    const cancelBooking = (id) => {
+    const cancelBooking = async (id) => {
+        const booking = bookings.find(b => b.id === id);
         const updatedBookings = bookings.map(b => b.id === id ? { ...b, status: 'Cancelled' } : b);
         setBookings(updatedBookings);
         localStorage.setItem('hotel_bookings', JSON.stringify(updatedBookings));
+
+        // Restore room availability in Supabase (only for room bookings, not packages)
+        if (booking && booking.hotelId && !booking.isPackage) {
+            try {
+                // Fetch current availability first
+                const { data: hotelData, error: fetchError } = await supabase
+                    .from('hotels')
+                    .select('availability')
+                    .eq('id', booking.hotelId)
+                    .single();
+
+                if (!fetchError && hotelData) {
+                    await supabase
+                        .from('hotels')
+                        .update({ availability: hotelData.availability + 1 })
+                        .eq('id', booking.hotelId);
+                }
+            } catch (err) {
+                console.error('Failed to restore room availability on cancellation:', err);
+            }
+        }
     };
 
     return (
