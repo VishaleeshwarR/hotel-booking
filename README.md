@@ -1,31 +1,54 @@
 # Hotel Booking
 
-A hotel booking frontend project implemented primarily in JavaScript with some styling in CSS.
+A hotel booking frontend project implemented primarily in JavaScript with styling in CSS.
 
-## Description
+## Key Features
 
-This repository contains the frontend for a hotel booking/demo application. It demonstrates booking flows, listing hotels, and basic UI interactions.
+- Browse and search hotels
+- View hotel details and availability
+- Select dates and make bookings (demo/frontend flow)
+- Responsive UI for desktop and mobile
 
-## Tech stack
+## Tech Stack
 
-- JavaScript
-- CSS
-- HTML
+- JavaScript, HTML, CSS
 
 ## Prerequisites
 
 - Node.js and npm (if the project includes a package.json)
 
-## Setup & Run
+## Cloning the repository
 
 ```bash
 git clone https://github.com/VishaleeshwarR/hotel-booking.git
 cd hotel-booking
+```
+
+## Install packages
+
+```bash
 npm install
+```
+
+## Setup & Run
+
+If the project has a dev script:
+
+```bash
 npm run dev
 ```
 
-If there is no package.json, open `index.html` in a browser or serve the folder with a static server (e.g. `npx serve`).
+Otherwise open `index.html` in the browser or serve the folder with a static server:
+
+```bash
+npx serve
+```
+
+## Project structure (example)
+
+- `index.html` — Main entry
+- `css/` — Styles
+- `js/` — Frontend logic
 
 ## Contributing
 
